@@ -7,34 +7,18 @@ services:
     networks:
       - monitoring_network
 
-  loki:
-    image: grafana/loki:latest
-    ports:
-      - '${LOKI_PORT}:3100'
-    networks:
-      - monitoring_network
-
-  promtail:
-    image: grafana/promtail:latest
+  nginx-app:
+    container_name: nginx-app
+    image: nginx
     volumes:
-      - ./promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml
-    networks:
-      - monitoring_network
-    depends_on:
-      - loki
-
-  prometheus:
-    image: prom/prometheus:latest
-    restart: always
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
+      - ./nginx/default.conf:/etc/nginx/nginx.conf
+    labels:
+      logging: 'promtail'
+      logging_jobname: 'containerlogs'
     ports:
-      - '${PROMETHEUS_PORT}:9090'
+      - 8080:80
     networks:
       - monitoring_network
-    depends_on:
-      - node-exporter
 
   grafana:
     image: grafana/grafana:latest
@@ -49,8 +33,42 @@ services:
       - grafana_data:/var/lib/grafana
     networks:
       - monitoring_network
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - '${LOKI_PORT}:3100'
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - monitoring_network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./promtail/config.yaml:/etc/promtail/config.yaml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yaml
     depends_on:
-      - prometheus
+      - loki
+    networks:
+      - monitoring_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - '${PROMETHEUS_PORT}:9090'
+    networks:
+      - monitoring_network
+    depends_on:
+      - node-exporter
 
 networks:
   monitoring_network:
@@ -59,3 +77,4 @@ networks:
 volumes:
   grafana_data:
   prometheus_data:
+  loki-data:
