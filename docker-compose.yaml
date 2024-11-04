@@ -7,6 +7,22 @@ services:
     networks:
       - monitoring_network
 
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - '${LOKI_PORT}:3100'
+    networks:
+      - monitoring_network
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - ./promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml
+    networks:
+      - monitoring_network
+    depends_on:
+      - loki
+
   prometheus:
     image: prom/prometheus:latest
     restart: always
@@ -30,6 +46,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
     networks:
       - monitoring_network
     depends_on:
