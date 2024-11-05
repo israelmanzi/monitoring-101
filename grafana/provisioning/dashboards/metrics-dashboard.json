@@ -527,7 +527,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "eth0",
           "value": "eth0"
         },
@@ -554,7 +554,7 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-2d",
     "to": "now"
   },
   "timepicker": {},
